@@ -18,7 +18,7 @@ function FriendCard({ friendDetails }: FriendCardProps) {
     useChatId();
 
   async function handleChatClick(){
-    setChatId(friendDetails._id)
+    setChatId(String(friendDetails._id))
     setIsSidePanelOpen(false);
     setChatName(friendDetails.name);
     setChatEmail(friendDetails.email);
