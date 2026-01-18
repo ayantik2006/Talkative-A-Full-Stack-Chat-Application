@@ -47,7 +47,7 @@ function Sidebar() {
           className="stroke-neutral-300 hover:bg-neutral-700 p-1 rounded-sm cursor-pointer"
           size={30}
           onClick={() => {
-            setIsSidePanelOpen((prev: boolean) => !prev);
+            setIsSidePanelOpen(!isSidePanelOpen);
           }}
         />
       </div>
