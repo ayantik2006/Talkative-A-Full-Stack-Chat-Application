@@ -17,4 +17,8 @@ io.on("connection", (socket) => {
   });
 });
 
+app.get("/health",(req,res)=>{
+  res.status(200).json({message:"OK"});
+});
+
 server.listen(8080, () => console.log("socket server running on 8080"));
