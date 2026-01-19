@@ -17,7 +17,8 @@ export async function POST(req: NextRequest) {
   hours = hours % 12;
   hours = hours === 0 ? 12 : hours;
 
-  const time = `${hours}:${minutes}${period}`;
+//   const time = `${hours}:${minutes}${period}`;
+const time=now.toLocaleTimeString();
 
   const email = await getUserEmail();
   const userData = await User.findOne({ email: email });
