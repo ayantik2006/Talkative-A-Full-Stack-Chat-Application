@@ -61,10 +61,21 @@ function ChatWindow() {
   async function handleSendMessage() {
     if (messageContent.trim() === "") return;
     setMessageContent((message) => message.trim());
+
+    const now = new Date();
+    const date = `${now.getDate()}/${now.getMonth() + 1}/${now.getFullYear()}`;
+    let hours = now.getHours();
+    const minutes = String(now.getMinutes()).padStart(2, "0");
+    const period = hours >= 12 ? "pm" : "am";
+    hours = hours % 12;
+    hours = hours === 0 ? 12 : hours;
+
+    const time = `${hours}:${minutes}${period}`;
+
     try {
       const response = await axios.post(
         "/api/create-chat",
-        { chatId: id, content: messageContent },
+        { chatId: id, content: messageContent, time: time, date: date },
         { withCredentials: true },
       );
       setMessageContent("");
