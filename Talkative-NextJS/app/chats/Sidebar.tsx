@@ -1,12 +1,13 @@
 "use client";
 
-import { CircleDot, PanelsTopLeft, UsersRound } from "lucide-react";
+import { CircleDot, LogOut, PanelsTopLeft, UsersRound } from "lucide-react";
 import { useChatId } from "./chatContext";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import axios from "axios";
 import FriendCard from "./FriendCard";
 import { Schema } from "mongoose";
+import { useRouter } from "next/navigation";
 
 interface FriendDetailsType {
   _id: Schema.Types.ObjectId;
@@ -19,6 +20,7 @@ function Sidebar() {
   const { isSidePanelOpen, setIsSidePanelOpen } =
     useChatId();
   const [friends, setFriends] = useState<FriendDetailsType[]>([]);
+  const router=useRouter();
 
   const getFriends = useCallback(() => {
     axios
@@ -34,6 +36,15 @@ function Sidebar() {
   useEffect(() => {
     getFriends();
   }, [getFriends]);
+  
+  async function logout(){
+    try{
+      await axios.post("/api/logout",{},{withCredentials:true})
+      router.push("/");
+    }catch(err){
+      console.log(err);
+    }
+  }
 
   return (
     <div
@@ -62,7 +73,7 @@ function Sidebar() {
           <FriendCard friendDetails={friend} key={String(friend._id)} />
         ))}
       </div>
-      <div className="h-30 flex flex-col gap-2 mt-4 w-full justify-center text-sm">
+      <div className="h-34 flex flex-col gap-2 mt-4 w-full justify-center text-sm">
         <Link
           href="/requests"
           className="flex items-center gap-2 text-neutral-400 hover:bg-neutral-800 p-3 rounded-sm duration-300 cursor-pointer bg-neutral-950"
@@ -77,6 +88,10 @@ function Sidebar() {
           <UsersRound size={16} />
           <p className="font-normal">Explore People</p>
         </Link>
+        <button className="flex items-center gap-2 text-neutral-400 hover:bg-[#1c0202] p-3 rounded-sm duration-300 cursor-pointer bg-neutral-950 border-2 border-red-950" onClick={logout}>
+          <LogOut size={16} className="stroke-red-800" />
+          <p className="text-red-800">Log out</p>
+        </button>
       </div>
     </div>
   );
