@@ -44,6 +44,7 @@ function ChatWindow() {
   const [id, setId] = useState<Schema.Types.ObjectId | null>(null);
   const [messageRightClickIndex, setMessageRightClickIndex] = useState(0);
   const [editedChat, setEditedChat] = useState("");
+
   const openVideoWindow = () => {
     window.open(
       "/video-call?id=" + id,
@@ -129,6 +130,7 @@ function ChatWindow() {
         { withCredentials: true },
       )
       .then((response) => {
+        socket.emit("chat updated", { chatId: id });
         setChats(response.data.chats);
       })
       .catch((err) => {
@@ -144,6 +146,7 @@ function ChatWindow() {
         { withCredentials: true },
       )
       .then((response) => {
+        socket.emit("chat updated", { chatId: id });
         setChats(response.data.chats);
       })
       .catch((err) => {
@@ -159,6 +162,7 @@ function ChatWindow() {
         { withCredentials: true },
       )
       .then((response) => {
+        socket.emit("chat updated", { chatId: id });
         setChats(response.data.chats);
       })
       .catch((err) => {

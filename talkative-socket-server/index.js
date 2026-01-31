@@ -15,10 +15,13 @@ io.on("connection", (socket) => {
   socket.on("chat added", (data) => {
     io.emit("update chats", { chatId: data.chatId });
   });
+  socket.on("chat updated", (data) => {
+    io.emit("update chats", { chatId: data.chatId });
+  });
 });
 
-app.get("/health",(req,res)=>{
-  res.status(200).json({message:"OK"});
+app.get("/health", (req, res) => {
+  res.status(200).json({ message: "OK" });
 });
 
 server.listen(8080, () => console.log("socket server running on 8080"));
