@@ -147,7 +147,8 @@ function ChatWindow() {
       )
       .then((response) => {
         socket.emit("chat updated", { chatId: id });
-        setChats(response.data.chats);
+        // setChats(response.data.chats);
+        getChats();
       })
       .catch((err) => {
         console.log(err);
