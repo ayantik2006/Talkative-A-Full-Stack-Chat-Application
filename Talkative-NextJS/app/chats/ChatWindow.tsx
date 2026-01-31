@@ -179,6 +179,7 @@ function ChatWindow() {
         { withCredentials: true },
       )
       .then((response) => {
+        socket.emit("chat updated", { chatId: id });
         setChats(response.data.chats);
       })
       .catch((err) => {
