@@ -11,5 +11,17 @@ export async function POST(req: NextRequest) {
   const chatData = await Chat.findOne({
     users: { $all: [userId, userId2] },
   });
-  return NextResponse.json({ chats: chatData?.chats, id:chatData?._id });
+  
+  interface chatDataType{
+    isDeleted:boolean;
+    content:string;
+  }
+  const chats = chatData?.chats as chatDataType[];
+  for (const chat of chats) {
+    if (chat.isDeleted) {
+      chat.content="This message was deleted"
+    }
+  }
+
+  return NextResponse.json({ chats: chatData?.chats, id: chatData?._id });
 }

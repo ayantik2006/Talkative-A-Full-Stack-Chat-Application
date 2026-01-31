@@ -4,16 +4,34 @@ import Image from "next/image";
 import { useChatId } from "./chatContext";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Send } from "lucide-react";
+import { Ban, RotateCcw, Send, SquarePen, Trash2, Video } from "lucide-react";
 import axios from "axios";
 import { io } from "socket.io-client";
 import { Schema } from "mongoose";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
+import ChatText from "./chatText";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 
 interface ChatDataType {
   authorName: string;
   time: string;
   content: string;
   authorId: string;
+  isDeleted?: boolean;
 }
 
 function ChatWindow() {
@@ -24,6 +42,15 @@ function ChatWindow() {
   const [chats, setChats] = useState<Array<ChatDataType>>([]);
   const socket = io(process.env.NEXT_PUBLIC_BACKEND_URL);
   const [id, setId] = useState<Schema.Types.ObjectId | null>(null);
+  const [messageRightClickIndex, setMessageRightClickIndex] = useState(0);
+  const [editedChat, setEditedChat] = useState("");
+  const openVideoWindow = () => {
+    window.open(
+      "/video-call?id=" + id,
+      "VideoCall",
+      "width=420,height=720,resizable=yes",
+    );
+  };
 
   useEffect(() => {
     const chatContainer = chatContainerRef.current;
@@ -94,6 +121,67 @@ function ChatWindow() {
 
   useEffect(() => {}, [socket]);
 
+  async function handleMessageDelete() {
+    axios
+      .post(
+        "/api/delete-chat",
+        { index: messageRightClickIndex, chatId: id },
+        { withCredentials: true },
+      )
+      .then((response) => {
+        setChats(response.data.chats);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  }
+
+  async function handlePermanentMessageDelete() {
+    axios
+      .post(
+        "/api/permanent-delete-chat",
+        { index: messageRightClickIndex, chatId: id },
+        { withCredentials: true },
+      )
+      .then((response) => {
+        setChats(response.data.chats);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  }
+
+  async function restoreMessage() {
+    axios
+      .post(
+        "/api/restore-chat",
+        { index: messageRightClickIndex, chatId: id },
+        { withCredentials: true },
+      )
+      .then((response) => {
+        setChats(response.data.chats);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  }
+
+  async function handleEditMessage(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    axios
+      .post(
+        "/api/edit-chat",
+        { index: messageRightClickIndex, editedChat: editedChat, chatId: id },
+        { withCredentials: true },
+      )
+      .then((response) => {
+        setChats(response.data.chats);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  }
+
   return (
     <div
       className={`z-0 text-white bg-neutral-800 p-5 duration-300 flex-1 left-18 h-screen pl-30 flex ${
@@ -109,20 +197,28 @@ function ChatWindow() {
       )}
       {chatId && (
         <div className="w-full flex flex-col gap-3">
-          <div className="h-fit w-full bg-neutral-900 p-3 rounded-sm flex gap-3 items-center">
-            <Image
-              src={String(chatImage)}
-              alt="avatar"
-              height={20}
-              width={43}
-              className="rounded-full"
-            />
-            <div className="flex flex-col">
-              <p className="font-semibold">{chatName}</p>
-              <p className="text-neutral-600 wrap-anywhere leading-4 text-sm">
-                {chatEmail}
-              </p>
+          <div className="h-fit w-full bg-neutral-900 p-3 rounded-sm flex gap-3 items-center justify-between">
+            <div className="flex gap-3">
+              <Image
+                src={String(chatImage)}
+                alt="avatar"
+                height={20}
+                width={43}
+                className="rounded-full"
+              />
+              <div className="flex flex-col">
+                <p className="font-semibold">{chatName}</p>
+                <p className="text-neutral-600 wrap-anywhere leading-4 text-sm">
+                  {chatEmail}
+                </p>
+              </div>
             </div>
+            {/* <div
+              className="hover:bg-neutral-700 rounded-full p-2 cursor-pointer duration-300"
+              onClick={() => openVideoWindow()}
+            >
+              <Video />
+            </div> */}
           </div>
 
           <div
@@ -135,30 +231,174 @@ function ChatWindow() {
               </div>
             )}
 
-            {chats.map((chatData, index) => (
-              <div key={index} className="w-full flex flex-col">
-                <div className="w-full">
-                  <div
-                    className={`${
-                      chatData.authorId !== chatId
-                        ? "ml-auto"
-                        : "flex-row-reverse"
-                    } w-fit flex items-end gap-2`}
-                  >
-                    <p className="text-sm text-neutral-600">{chatData.time}</p>
-                    <p
-                      className={`${
-                        chatData.authorId !== chatId
-                          ? "bg-[#144D37]"
-                          : "bg-[#3e3f3f]"
-                      } px-2 py-1 rounded-sm`}
+            {chats.map((chatData, index) => {
+              if (chatData.isDeleted)
+                return (
+                  <div key={index}>
+                    <ContextMenu
+                      onOpenChange={(e) => {
+                        if (e) setMessageRightClickIndex(index);
+                      }}
                     >
-                      {chatData.content}
-                    </p>
+                      <ContextMenuTrigger>
+                        <div className="w-full hover:bg-neutral-800 rounded-md p-1">
+                          <div
+                            className={`${
+                              chatData.authorId !== chatId
+                                ? "ml-auto"
+                                : "flex-row-reverse"
+                            } w-fit flex items-end gap-2`}
+                          >
+                            <p
+                              className={`${
+                                chatData.authorId !== chatId
+                                  ? "bg-[#144D37]"
+                                  : "bg-[#3e3f3f]"
+                              } px-2 py-1 rounded-sm italic text-[#9FA8A8] flex items-center gap-1`}
+                            >
+                              <Ban size={18} />
+                              This message was deleted
+                            </p>
+                          </div>
+                        </div>
+                      </ContextMenuTrigger>
+                      <ContextMenuContent className="bg-neutral-800 border border-neutral-700 text-white">
+                        <div
+                          className="flex gap-2 text-neutral-400 pl-2 items-center cursor-pointer py-1 hover:bg-neutral-900 rounded-sm"
+                          onClick={restoreMessage}
+                        >
+                          <RotateCcw size={15} />
+                          <p className="text-[0.85rem]">Restore</p>
+                        </div>
+                        <Dialog>
+                          <DialogTrigger className="w-full">
+                            <div className="flex gap-2 text-neutral-400 px-2 py-1 items-center cursor-pointer hover:bg-neutral-900 rounded-sm">
+                              <Trash2 size={15} className="stroke-red-700" />
+                              <p className="text-[0.85rem] text-red-700">
+                                Delete
+                              </p>
+                            </div>
+                          </DialogTrigger>
+                          <DialogContent className="bg-neutral-900 text-white border border-neutral-700">
+                            <DialogHeader>
+                              <DialogTitle>Permanently Delete Chat</DialogTitle>
+                              <DialogDescription>
+                                This action cannot be undone
+                              </DialogDescription>
+                            </DialogHeader>
+                            <DialogClose asChild>
+                              <Button
+                                variant={"outline"}
+                                className="text-black cursor-pointer hover:opacity-90 duration-300"
+                                onClick={handlePermanentMessageDelete}
+                              >
+                                Delete
+                              </Button>
+                            </DialogClose>
+                          </DialogContent>
+                        </Dialog>
+                      </ContextMenuContent>
+                    </ContextMenu>
                   </div>
-                </div>
-              </div>
-            ))}
+                );
+              else
+                return (
+                  <div key={index} className="w-full flex flex-col">
+                    {chatData.authorId !== chatId && (
+                      <ContextMenu
+                        onOpenChange={(e) => {
+                          if (e) setMessageRightClickIndex(index);
+                        }}
+                      >
+                        <ContextMenuTrigger>
+                          <ChatText
+                            chatData={{ chatData: chatData, chatId: chatId }}
+                          />
+                        </ContextMenuTrigger>
+                        <ContextMenuContent className="bg-neutral-800 border border-neutral-700 text-white">
+                          <Dialog>
+                            <DialogTrigger className="w-full">
+                              <div className="flex gap-2 text-neutral-400 px-2 py-1 items-center cursor-pointer hover:bg-neutral-900 rounded-sm">
+                                <Trash2 size={15} className="stroke-red-700" />
+                                <p className="text-[0.85rem] text-red-700">
+                                  Delete
+                                </p>
+                              </div>
+                            </DialogTrigger>
+                            <DialogContent className="bg-neutral-900 text-white border border-neutral-700">
+                              <DialogHeader>
+                                <DialogTitle>Delete Chat</DialogTitle>
+                                <DialogDescription>
+                                  You can undo this action whenever you like
+                                </DialogDescription>
+                              </DialogHeader>
+                              <DialogClose asChild>
+                                <Button
+                                  variant={"outline"}
+                                  className="text-black cursor-pointer hover:opacity-90 duration-300"
+                                  onClick={handleMessageDelete}
+                                >
+                                  Delete
+                                </Button>
+                              </DialogClose>
+                            </DialogContent>
+                          </Dialog>
+                          <Dialog>
+                            <DialogTrigger className="w-full">
+                              <div className="flex gap-2 text-neutral-400 pl-2 items-center cursor-pointer py-1 hover:bg-neutral-900 rounded-sm w-full">
+                                <SquarePen size={15} />
+                                <p className="text-[0.85rem]">Edit</p>
+                              </div>
+                            </DialogTrigger>
+                            <DialogContent className="bg-neutral-900 text-white border border-neutral-700">
+                              <DialogHeader>
+                                <DialogTitle>Edit Chat</DialogTitle>
+                                {/* <DialogDescription>
+                                  This action cannot be undone. This will
+                                  permanently delete your account and remove
+                                  your data from our servers.
+                                </DialogDescription> */}
+                              </DialogHeader>
+                              <form
+                                onSubmit={handleEditMessage}
+                                className="flex gap-2"
+                              >
+                                <Input
+                                  placeholder="Edit the chat"
+                                  autoFocus
+                                  defaultValue={
+                                    chats[messageRightClickIndex].content
+                                  }
+                                  className="selection:bg-blue-700"
+                                  onInput={(e) =>
+                                    setEditedChat(e.currentTarget.value)
+                                  }
+                                />
+                                <DialogClose asChild>
+                                  <Button
+                                    variant={"outline"}
+                                    className="text-black hover:opacity-90 cursor-pointer"
+                                    type="submit"
+                                  >
+                                    Save
+                                  </Button>
+                                </DialogClose>
+                              </form>
+                            </DialogContent>
+                          </Dialog>
+                        </ContextMenuContent>
+                      </ContextMenu>
+                    )}
+                    {chatData.authorId === chatId && (
+                      <div className="w-full">
+                        <ChatText
+                          chatData={{ chatData: chatData, chatId: chatId }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                );
+            })}
           </div>
           <div className="w-full h-15 rounded-sm bg-neutral-900 p-1 flex items-center gap-2">
             <input
